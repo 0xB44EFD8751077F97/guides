@@ -1,5 +1,10 @@
-{% assign version = '2.0.0' | split: '.' %}
-{% include disclaimer.html translated="true" version=page.version %}
+<!---
+## Copyright (C) 2018 0xB44EFD8751077F97 <0xB44EFD8751077F97@firemail.cc>
+## Email PGP key: 0x1459B25A910FB2ADA81F3A2ECEB6855A143465B2
+## https://github.com/0xB44EFD8751077F97/apparmor-monero-qubes-whonix
+## See the file COPYING for copying conditions.
+-->
+
 # Wallet/Daemon Isolation with Qubes + Whonix
 
 With [Qubes](https://qubes-os.org) + [Whonix](https://whonix.org) you can have a Monero wallet that has no network connection, and runs on a virtually isolated system from the daemon which has all of its traffic forced over [Tor](https://torproject.org).
