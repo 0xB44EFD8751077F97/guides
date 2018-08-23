@@ -4,7 +4,7 @@
 
 ## License                                                                                    
                                                                                               
-GPLv3, see the included file: [COPYING](https://github.com/0xB44EFD8751077F97/guides/blob/master/COPYING).
+GPLv3, see the included file: COPYING.
 
 ## Support
 
