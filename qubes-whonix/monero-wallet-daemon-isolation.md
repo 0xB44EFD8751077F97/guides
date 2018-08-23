@@ -223,7 +223,7 @@ user@host:~$ sudo gedit /rw/config/rc.local
 + Add the following line to the bottom of the file:
 
 ```
-socat TCP-LISTEN:18081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws user.monerod" &
+socat TCP-LISTEN:18081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws whonix.monerod" &
 ```
 
 + Make the file executable.
@@ -281,7 +281,7 @@ user@host:~$ sudo tail -f /home/monerod/.bitmonero/bitmonero.log
 Height: 1643497/1643497 (100.0%) on mainnet, not mining, net hash 462.02 MH/s, v7, up to date, 8(out)+0(in) connections, uptime 0d 0h 6m 26s
 ```
 
-+ Or when the debug log shows `SYNCHRONIZED OK`:
++ Or when the debug log shows `SYNCHRONIZED OK`.
 
 ```
 **********************************************************************
@@ -300,13 +300,13 @@ Using the monero wallet in the AppVM `monero-wallet-ws` does not require any spe
 
 ### 6.1. Getting started
 
-+ To create a new wallet, run `monero-wallet-cli` and follow the instructions.
++ To create a new wallet, run `monero-wallet-cli` and follow the instructions:
 
 ```
 user@host:~$ monero-wallet-cli
 ```
 
-+ Get the help menu from the `monero-wallet-cli` prompt.
++ Get the help menu from the `monero-wallet-cli` prompt:
 
 ```
 [wallet 4xxxxx]: help
