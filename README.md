@@ -4,7 +4,9 @@
 
 ## License                                                                                    
                                                                                               
-GPLv3, see the included file: COPYING.
+GPLv3. 
+
+See the file COPYING for copying conditions.
 
 ## Support
 
