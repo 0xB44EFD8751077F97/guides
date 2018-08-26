@@ -1,6 +1,6 @@
 <!---
 ## Copyright (C) 2018 0xB44EFD8751077F97 <0xB44EFD8751077F97@firemail.cc>
-## Email PGP key: 0x1459B25A910FB2ADA81F3A2ECEB6855A143465B2
+## Email PGP key: 0x4575F28C5441951C8A0056B8CE1A00A773F733E1
 ## https://github.com/0xB44EFD8751077F97/guides
 ## See the file COPYING for copying conditions.
 -->
@@ -15,23 +15,22 @@ This is safer than other approaches which route the wallet's rpc over a Tor hidd
 Please note that the current version of the Monero software may differ from what these examples show. You should always refer to Monero's [official site](https://getmonero.org/downloads/#linux) for the most recent version.
 
 ## Table of contents:
-
-1. **[Create TemplateVM and AppVMs](#1-create-templatevm-and-appvms)**
+1. **[Create the TemplateVM and AppVMs](#1-create-templatevm-and-appvms)**
 + 1.1. [Create TemplateVM: `whonix-ws-14-monero`](#11-create-templatevm-whonix-ws-14-monero)
-+ 1.2. [Create daemon AppVM: `monerod-ws`](#13-create-daemon-appvm-monerod-ws)
-+ 1.3. [Create wallet AppVM: `monero-wallet-ws`](#12-create-wallet-appvm-monero-wallet-ws)
-+ 1.4. [Create `qrexec` policy](#14-create-qrexec-policy)
-2. **[Set up TemplateVM](#2-set-up-templatevm)**
++ 1.2. [Create daemon's AppVM: `monerod-ws`](#12-create-daemons-appvm-monerod-ws)
++ 1.3. [Create wallet's AppVM: `monero-wallet-ws`](#13-create-wallets-appvm-monero-wallet-ws)
++ 1.4. [Create `qrexec` policies](#14-create-qrexec-policies)
+2. **[Set Up the TemplateVM](#2-set-up-the-templatevm)**
 + 2.1. [Create system user](#21-create-system-user)
 + 2.2. [Create `systemd` unit](#22-create-systemd-unit)
 + 2.3. [Shutdown `whonix-ws-14-monero`](#23-shutdown-whonix-ws-14-monero)
-3. **[Set up Daemon AppVM](#3-set-up-daemon-appvm)**
+3. **[Set Up the Daemon's AppVM](#3-set-up-the-daemons-appvm)**
 + 3.1. [Get Monero software](#31-get-latest-monero-software)
   + 3.1.1. [Install command-line only tools](#311-install-command-line-only-tools)
   + 3.1.2. [Install GUI tools](#312-install-gui-tools)
 + 3.2. [Create `qrexec` action file](#32-create-qrexec-action-file)
 + 3.3. [Shutdown `monerod-ws`](#33-shutdown-monerod-ws)
-4. **[Set up Wallet AppVM](#4-set-up-wallet-appvm)**
+4. **[Set Up the Wallet's AppVM](#4-set-up-the-wallets-appvm)**
 + 4.1. [Install wallet binaries](#41-install-wallet-binaries)
 + 4.2. [Create communication channel with daemon on boot](#42-create-communication-channel-with-daemon-on-boot)
 + 4.3. [Shutdown `monero-wallet-ws`](#43-shutdown-monero-wallet-ws)
@@ -48,61 +47,45 @@ Please note that the current version of the Monero software may differ from what
 + 8.3. [Qubes `sudo` prompt](#83-dom0-sudo-prompt)
 
 ## 1. Create TemplateVM and AppVMs
-
-**Complete the following commands in a `dom0` terminal.**
-
-### 1.1. Create the TemplateVM: `whonix-ws-14-monero`
+### **Complete the following commands in a `dom0` terminal.**
+### 1.1. Create TemplateVM: `whonix-ws-14-monero`
 ```
 [user@dom0 ~]$ qvm-clone whonix-ws-14 whonix-ws-14-monero
 ```
+### 1.2. Create daemon's AppVM: `monerod-ws`
++ Use a Whonix gateway, typically named `sys-whonix`, for networking.
 
-### 1.2. Create the daemon AppVM: `monerod-ws`
 ```
 [user@dom0 ~]$ qvm-create --label green --property netvm=sys-whonix --template whonix-ws-14-monero monerod-ws
 ```
-
 + Extend the private volume of `monerod-ws` to make space for the blockchain.
 
 ```
 [user@dom0 ~]$ qvm-volume extend monerod-ws:private 70G
 ```
-
 + Enable the `monerod` service in `monerod-ws`.
 
 ```
 [user@dom0 ~]$ qvm-service --enable monerod-ws monerod
 ```
-
-### 1.3. Create the wallet AppVM: `monero-wallet-ws`
+### 1.3. Create wallet's AppVM: `monero-wallet-ws`
 ```
 [user@dom0 ~]$ qvm-create --label green --property netvm='' --template whonix-ws-14-monero monero-wallet-ws
 ```
-
-### 1.4. Create `qrexec` policy
+### 1.4. Create `qrexec` policies
 ```
-[user@dom0 ~]$ sudo nano /etc/qubes-rpc/policy/whonix.monerod
+[user@dom0 ~]$ echo 'monero-wallet-ws monerod-ws allow' | sudo tee /etc/qubes-rpc/policy/whonix.monerod-{mainnet,stagenet,testnet} >/dev/null
 ```
-
-+ Add the following line:
-
-```
-monero-wallet-ws monerod-ws allow
-```
-
-## 2. Set up TemplateVM
-
-**Complete the following commands in a `whonix-ws-14-monero` terminal.**
-
+## 2. Set Up the TemplateVM
+### **Complete the following commands in a `whonix-ws-14-monero` terminal.**
 ### 2.1. Create system user
 ```
 user@host:~$ sudo useradd --create-home --system --user-group monerod
 ```
-
 ### 2.2. Create `systemd` unit
 ```
 user@host:~$ sudo kwrite /lib/systemd/system/monerod.service
 ```
-
 + Paste the following:
 
 ```
@@ -123,33 +106,24 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 ```
-
 + Fix permissions.
 
 ```
 user@host:~$ sudo chmod 0644 /lib/systemd/system/monerod.service
 ```
-
 + Enable the unit.
 
 ```
 user@host:~$ sudo systemctl enable monerod.service
 ```
-
 ### 2.3. Shutdown `whonix-ws-14-monero`
-
 ```
 user@host:~$ sudo shutdown now
 ```
-
-## 3. Set up Daemon AppVM
-
-**Complete the following commands in a `monerod-ws` terminal.**
-
+## 3. Set Up the Daemon's AppVM
+### **Complete the following commands in a `monerod-ws` terminal.**
 ### 3.1. Get Monero software
-
 ### 3.1.1. Install command-line only tools
-
 + Use Monero's [guide](https://getmonero.org/resources/user-guides/verification-allos-advanced.html) to download and verify the current software for the command-line only tools.
   + [`Linux, 64-bit Command-Line Tools Only`](https://downloads.getmonero.org/cli/linux64)
 
@@ -159,14 +133,12 @@ user@host:~$ sudo shutdown now
 user@host:~$ tar xf monero-linux-x64-v0.12.3.0.tar.bz2 -C ~
 user@host:~$ sudo install -g staff -m 0755 -o root ~/monero-v0.12.3.0/monero-blockchain-* ~/monero-v0.12.3.0/monerod -t /usr/local/bin/
 ```
-
 + Copy wallet binaries to their AppVM. Enter `monero-wallet-ws` in the `dom0` prompt.
 
 ```
 user@host:~$ qvm-copy ~/monero-v0.12.3.0/monero-gen-trusted-multisig ~/monero-v0.12.3.0/monero-wallet-*
 ```
 ### 3.1.2. Install GUI tools
-
 + Use Monero's [guide](https://getmonero.org/resources/user-guides/verification-allos-advanced.html) to download and verify the current software for the GUI.
   + [`Linux, 64-bit GUI`](https://downloads.getmonero.org/gui/linux64)
 
@@ -176,74 +148,59 @@ user@host:~$ qvm-copy ~/monero-v0.12.3.0/monero-gen-trusted-multisig ~/monero-v0
 user@host:~$ tar xf monero-gui-linux-x64-v0.12.3.0.tar.bz2 -C ~
 user@host:~$ sudo install -g staff -m 0755 -o root ~/monero-gui-v0.12.3.0/monero-blockchain-* ~/monero-gui-v0.12.3.0/monerod -t /usr/local/bin/
 ```
-
 + Copy wallet binaries to their AppVM. Enter `monero-wallet-ws` in the `dom0` prompt.
 
 ```
 user@host:~$ qvm-copy ~/monero-gui-v0.12.3.0/monero-gen-trusted-multisig ~/monero-gui-v0.12.3.0/monero-wallet-*
 ```
-
-### 3.2. Create `qrexec` action file
+### 3.2. Create `qrexec` action files
 ```
 user@host:~$ sudo mkdir -m 0755 /rw/usrlocal/etc/qubes-rpc
-user@host:~$ sudo kwrite /rw/usrlocal/etc/qubes-rpc/whonix.monerod
+user@host:~$ echo 'socat STDIO TCP:localhost:18081' | sudo tee /rw/usrlocal/etc/qubes-rpc/whonix.monerod-mainnet >/dev/null
+user@host:~$ echo 'socat STDIO TCP:localhost:28081' | sudo tee /rw/usrlocal/etc/qubes-rpc/whonix.monerod-testnet >/dev/null
+user@host:~$ echo 'socat STDIO TCP:localhost:38081' | sudo tee /rw/usrlocal/etc/qubes-rpc/whonix.monerod-stagenet >/dev/null
 ```
-
-+ Add the following line:
++ Fix permissions.
 
 ```
-socat STDIO TCP:localhost:18081
+user@host:~$ sudo chmod 0644 /rw/usrlocal/etc/qubes-rpc/whonix.monerod-*
 ```
-
 ### 3.3. Shutdown `monerod-ws`
-
 ```
 user@host:~$ sudo shutdown now
 ```
-
-## 4. Set up Wallet AppVM
-
-**Complete the following commands in a `monero-wallet-ws` terminal.**
-
+## 4. Set Up the Wallet's AppVM
+### **Complete the following commands in a `monero-wallet-ws` terminal.**
 ### 4.1. Install wallet binaries
 ```
 user@host:~$ sudo install -g staff -m 0755 -o root ~/QubesIncoming/monerod-ws/monero-gen-trusted-multisig ~/QubesIncoming/monerod-ws/monero-wallet-* -t /usr/local/bin/
 ```
-
 ### 4.2. Create communication channel with daemon on boot
-
 + Edit the file `/rw/config/rc.local`.
 
 ```
 user@host:~$ sudo kwrite /rw/config/rc.local
 ```
-
-+ Add the following line to the bottom of the file:
++ Paste the following at the end of the file:
 
 ```
-socat TCP-LISTEN:18081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws whonix.monerod" &
+socat TCP-LISTEN:18081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws whonix.monerod-mainnet" &
+socat TCP-LISTEN:28081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws whonix.monerod-testnet" &
+socat TCP-LISTEN:38081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws whonix.monerod-stagenet" &
 ```
-
 + Make the file executable.
 
 ```
 user@host:~$ sudo chmod +x /rw/config/rc.local
 ```
-
 ### 4.3. Shutdown `monero-wallet-ws`
-
 ```
 user@host:~$ sudo shutdown now
 ```
-
 ## 5. Using the Daemon
-
-Before you can use the wallet you will need to synchronize the Monero blockchain on the AppVM `monerod-ws`. The initial sync can take anywhere from 5 hours to multiple days, depending on your specific hardware and network speeds.
-
-**Complete the following commands in a `monerod-ws` terminal.**
-
+Before using the wallet you must synchronize the blockchain on the AppVM `monerod-ws`. The initial sync can take anywhere from 5 hours to multiple days, depending on your hardware and network.
+### **Complete the following commands in a `monerod-ws` terminal.**
 ### 5.1. Control the daemon
-
 + Stop or resume blockchain sync at any time by shutting down or starting the AppVM `monerod-ws`, or control the service manually.
 
 ```
@@ -251,34 +208,28 @@ user@host:~$ sudo systemctl stop monerod
 user@host:~$ sudo systemctl start monerod
 user@host:~$ sudo systemctl status monerod
 ```
-
-+ Issue any command to the running daemon as user `monerod`. To see commands:
++ Issue any command to the running daemon as user `monerod`. To see help menu:
 
 ```
 user@host:~$ sudo -u monerod monerod help
 ```
-
 ### 5.2. Monitor the daemon
-
 + Check the sync status.
 
 ```
 user@host:~$ sudo -u monerod monerod status
 Height: 1642996/1643496 (99.9%) on mainnet, not mining, net hash 475.35 MH/s, v7, up to date, 5(out)+0(in) connections, uptime 0d 0h 0m 5s
 ```
-
 + Watch the debug log.
 
 ```
 user@host:~$ sudo tail -f /home/monerod/.bitmonero/bitmonero.log
 ```
-
 + You can begin to use your wallet when the sync status shows:
 
 ```
 Height: 1643497/1643497 (100.0%) on mainnet, not mining, net hash 462.02 MH/s, v7, up to date, 8(out)+0(in) connections, uptime 0d 0h 6m 26s
 ```
-
 + Or when the debug log shows `SYNCHRONIZED OK`.
 
 ```
@@ -289,36 +240,27 @@ Use the "help" command to see the list of available commands.
 **********************************************************************
 2018-08-21 01:29:15.743 [P2P2]  INFO    global  src/cryptonote_protocol/cryptonote_protocol_handler.inl:1561  SYNCHRONIZED OK
 ```
-
 ## 6. Using the Command-Line Tools
-
-Using the command-line tools in `monero-wallet-ws` does not require any special commands. For more examples you can refer to Monero's [guide](https://getmonero.org/resources/user-guides/monero-wallet-cli.html) on using the tool `monero-wallet-cli`.
-
-**Complete the following commands in a `monero-wallet-ws` terminal.**
-
+### **Complete the following commands in a `monero-wallet-ws` terminal.**
 ### 6.1. Getting started
-
 + To create a new wallet, run `monero-wallet-cli` and follow the instructions.
 
 ```
 user@host:~$ monero-wallet-cli
 ```
-
-+ Get the help menu from the `monero-wallet-cli` prompt.
++ Get help menu from the wallet prompt.
 
 ```
 [wallet 4xxxxx]: help
 ```
++ For more examples refer to the [user guide](https://getmonero.org/resources/user-guides/monero-wallet-cli.html).
 
 ## 7. Using the GUI
-
 ### 7.1. Launch the GUI
 ```
 user@host:~$ monero-wallet-gui
 ```
-
 ## 8. Advanced Security Tips
-
 ### 8.1. Enable AppArmor
 
 + Use the Whonix wiki for enabling AppArmor: 
