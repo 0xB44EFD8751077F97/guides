@@ -13,8 +13,7 @@ Qubes gives the flexibility to easily create separate VMs for different purposes
 This is safer than other approaches which route the wallet's rpc over a Tor hidden service, or that use physical isolation but still have networking to connect to the daemon. In this way you don't need any network connection on the wallet, you preserve resources of the Tor network, and there is less latency.
 
 Please note that the current version of the Monero software may differ from what these examples show. You should always refer to Monero's [official site](https://getmonero.org/downloads/#linux) for the most recent version.
-
-## Table of contents:
+## Table of Contents
 1. **[Create the TemplateVM and AppVMs](#1-create-templatevm-and-appvms)**
 + 1.1. [Create TemplateVM: `whonix-ws-14-monero`](#11-create-templatevm-whonix-ws-14-monero)
 + 1.2. [Create daemon's AppVM: `monerod-ws`](#12-create-daemons-appvm-monerod-ws)
@@ -22,8 +21,12 @@ Please note that the current version of the Monero software may differ from what
 + 1.4. [Create `qrexec` policies](#14-create-qrexec-policies)
 2. **[Set Up the TemplateVM](#2-set-up-the-templatevm)**
 + 2.1. [Create system user](#21-create-system-user)
-+ 2.2. [Create `systemd` unit](#22-create-systemd-unit)
-+ 2.3. [Shutdown `whonix-ws-14-monero`](#23-shutdown-whonix-ws-14-monero)
++ 2.2. [Set up `systemd` units](#22-set-up-systemd-units)
+  + 2.2.1. [Create mainnet unit](#221-create-mainnet-unit)
+  + 2.2.2. [Create stagenet unit](#222-create-stagenet-unit)
+  + 2.2.3. [Create testnet unit](#223-create-testnet-unit)
++ 2.3. [Enable the units that should start on boot](#23-enable-the-units-that-should-start-on-boot)
++ 2.4. [Shutdown `whonix-ws-14-monero`](#23-shutdown-whonix-ws-14-monero)
 3. **[Set Up the Daemon's AppVM](#3-set-up-the-daemons-appvm)**
 + 3.1. [Get Monero software](#31-get-latest-monero-software)
   + 3.1.1. [Install command-line only tools](#311-install-command-line-only-tools)
@@ -41,7 +44,7 @@ Please note that the current version of the Monero software may differ from what
 + 6.1. [Getting started](#61-getting-started)
 7. **[Using the GUI](#7-using-the-gui)**
 + 7.1. [Launch the GUI](#71-launch-the-gui)
-8. **[Advanced Security Tips](#8-advanced-security-tips)**
+8. **[Advanced Tips](#8-advanced-security-tips)**
 + 8.1. [Enable AppArmor](#81-enable-apparmor)
 + 8.2. [VM hardening](#82-vm-haredening)
 + 8.3. [Qubes `sudo` prompt](#83-dom0-sudo-prompt)
@@ -61,12 +64,14 @@ Please note that the current version of the Monero software may differ from what
 + Extend the private volume of `monerod-ws` to make space for the blockchain.
 
 ```
-[user@dom0 ~]$ qvm-volume extend monerod-ws:private 70G
+[user@dom0 ~]$ qvm-volume extend monerod-ws:private 100G
 ```
-+ Enable the `monerod` service in `monerod-ws`.
++ Enable via `qvm-service`.
 
 ```
-[user@dom0 ~]$ qvm-service --enable monerod-ws monerod
+[user@dom0 ~]$ qvm-service --enable monerod-ws monerod-mainnet
+[user@dom0 ~]$ qvm-service --enable monerod-ws monerod-stagenet
+[user@dom0 ~]$ qvm-service --enable monerod-ws monerod-testnet
 ```
 ### 1.3. Create wallet's AppVM: `monero-wallet-ws`
 ```
@@ -82,16 +87,17 @@ Please note that the current version of the Monero software may differ from what
 ```
 user@host:~$ sudo useradd --create-home --system --user-group monerod
 ```
-### 2.2. Create `systemd` unit
+### 2.2. Set up `systemd` units
+### 2.2.1. Create mainnet unit
 ```
-user@host:~$ sudo kwrite /lib/systemd/system/monerod.service
+user@host:~$ sudo kwrite /lib/systemd/system/monerod-mainnet.service
 ```
 + Paste the following:
 
 ```
 [Unit]
-Description=Monero Full Node
-ConditionPathExists=/var/run/qubes-service/monerod
+Description=Monero Full Node Mainnet
+ConditionPathExists=/var/run/qubes-service/monerod-mainnet
 After=qubes-sysinit.service
 
 [Service]
@@ -106,17 +112,45 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 ```
+### 2.2.2. Create stagenet unit
+```
+user@host:~$ sudo kwrite /lib/systemd/system/monerod-stagenet.service
+```
++ Paste the following:
+
+```
+[Unit]
+Description=Monero Full Node Stagenet
+ConditionPathExists=/var/run/qubes-service/monerod-stagenet
+After=qubes-sysinit.service
+
+[Service]
+User=monerod
+Group=monerod
+Type=forking
+PIDFile=/home/monerod/.bitmonero/stagenet/monerod.pid
+ExecStart=/usr/local/bin/monerod --detach --no-igd --p2p-bind-ip=127.0.0.1 \
+    --pidfile=/home/monerod/.bitmonero/stagenet/monerod.pid --stagenet
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+### 2.2.3. Create testnet unit
+```
+user@host:~$ sudo cp /lib/systemd/system/monerod-stagenet.service /lib/systemd/system/monerod-testnet.service
+user@host:~$ sudo sed -i -e 's/stagenet/testnet/g' -e 's/Stagenet/Testnet/g' /lib/systemd/system/monerod-testnet.service
+```
 + Fix permissions.
 
 ```
-user@host:~$ sudo chmod 0644 /lib/systemd/system/monerod.service
+user@host:~$ sudo chmod 0644 /lib/systemd/system/monerod-*.service
 ```
-+ Enable the unit.
-
+### 2.3. Enable the units that should start on boot
 ```
-user@host:~$ sudo systemctl enable monerod.service
+user@host:~$ sudo systemctl enable monerod-mainnet.service
 ```
-### 2.3. Shutdown `whonix-ws-14-monero`
+### 2.4. Shutdown `whonix-ws-14-monero`
 ```
 user@host:~$ sudo shutdown now
 ```
@@ -181,7 +215,7 @@ user@host:~$ sudo install -g staff -m 0755 -o root ~/QubesIncoming/monerod-ws/mo
 ```
 user@host:~$ sudo kwrite /rw/config/rc.local
 ```
-+ Paste the following at the end of the file:
++ Paste the following on a new line at the bottom of the file:
 
 ```
 socat TCP-LISTEN:18081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws whonix.monerod-mainnet" &
@@ -204,9 +238,9 @@ Before using the wallet you must synchronize the blockchain on the AppVM `monero
 + Stop or resume blockchain sync at any time by shutting down or starting the AppVM `monerod-ws`, or control the service manually.
 
 ```
-user@host:~$ sudo systemctl stop monerod
-user@host:~$ sudo systemctl start monerod
-user@host:~$ sudo systemctl status monerod
+user@host:~$ sudo systemctl stop monerod-mainnet.service
+user@host:~$ sudo systemctl start monerod-mainnet.service
+user@host:~$ sudo systemctl status monerod-mainnet.service
 ```
 + Issue any command to the running daemon as user `monerod`. To see help menu:
 
@@ -225,7 +259,7 @@ Height: 1642996/1643496 (99.9%) on mainnet, not mining, net hash 475.35 MH/s, v7
 ```
 user@host:~$ sudo tail -f /home/monerod/.bitmonero/bitmonero.log
 ```
-+ You can begin to use your wallet when the sync status shows:
++ You may use your wallet when the sync status shows `100.0%`.
 
 ```
 Height: 1643497/1643497 (100.0%) on mainnet, not mining, net hash 462.02 MH/s, v7, up to date, 8(out)+0(in) connections, uptime 0d 0h 6m 26s
@@ -260,7 +294,7 @@ user@host:~$ monero-wallet-cli
 ```
 user@host:~$ monero-wallet-gui
 ```
-## 8. Advanced Security Tips
+## 8. Advanced Tips
 ### 8.1. Enable AppArmor
 
 + Use the Whonix wiki for enabling AppArmor: 
