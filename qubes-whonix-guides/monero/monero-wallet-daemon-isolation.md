@@ -5,14 +5,11 @@
 ## See the file COPYING for copying conditions.
 -->
 # Wallet/Daemon Isolation with Qubes + Whonix
-
 With [Qubes](https://qubes-os.org) + [Whonix](https://whonix.org) you can have a Monero wallet that has no network connection, and runs on a virtually isolated system from the daemon which has all of its traffic forced over [Tor](https://torproject.org).
 
 Qubes gives the flexibility to easily create separate VMs for different purposes. First you will create a Whonix workstation for the wallet with no connection to the network. Next, another Whonix workstation for the daemon which will use a Whonix gateway for networking. For communication between the wallet and daemon you can make use of Qubes [`qrexec`](https://www.qubes-os.org/doc/qrexec3/).
 
 This is safer than other approaches which route the wallet's rpc over a Tor hidden service, or that use physical isolation but still have networking to connect to the daemon. In this way you don't need any network connection on the wallet, you preserve resources of the Tor network, and there is less latency.
-
-Please note that the current version of the Monero software may differ from what these examples show. You should always refer to Monero's [official site](https://getmonero.org/downloads/#linux) for the most recent version.
 ## Table of Contents
 1. **[Create the TemplateVM and AppVMs](#1-create-templatevm-and-appvms)**
 + 1.1. [Create TemplateVM: `whonix-ws-14-monero`](#11-create-templatevm-whonix-ws-14-monero)
@@ -64,7 +61,7 @@ Please note that the current version of the Monero software may differ from what
 + Extend the private volume of `monerod-ws` to make space for the blockchain.
 
 ```
-[user@dom0 ~]$ qvm-volume extend monerod-ws:private 100G
+[user@dom0 ~]$ qvm-volume extend monerod-ws:private 70G
 ```
 + Enable via `qvm-service`.
 
@@ -149,6 +146,8 @@ user@host:~$ sudo chmod 0644 /lib/systemd/system/monerod-*.service
 ### 2.3. Enable the units that should start on boot
 ```
 user@host:~$ sudo systemctl enable monerod-mainnet.service
+user@host:~$ sudo systemctl enable monerod-stagenet.service
+user@host:~$ sudo systemctl enable monerod-testnet.service
 ```
 ### 2.4. Shutdown `whonix-ws-14-monero`
 ```
@@ -157,6 +156,9 @@ user@host:~$ sudo shutdown now
 ## 3. Set Up the Daemon's AppVM
 ### **Complete the following commands in a `monerod-ws` terminal.**
 ### 3.1. Get Monero software
+Please note that Monero current version numbers change frequently as the software is updated. In an effort to not give outdated information, this guide will replace the current software current version number with the placeholder `<current version>`.
+
+You should replace `<current version>` with whatever the current version number is. You can get the current version on Monero's [official site](https://getmonero.org/downloads/#linux).
 ### 3.1.1. Install command-line only tools
 + Use Monero's [guide](https://getmonero.org/resources/user-guides/verification-allos-advanced.html) to download and verify the current software for the command-line only tools.
   + [`Linux, 64-bit Command-Line Tools Only`](https://downloads.getmonero.org/cli/linux64)
@@ -164,13 +166,13 @@ user@host:~$ sudo shutdown now
 + Extract the software and install the daemon binaries.
 
 ```
-user@host:~$ tar xf monero-linux-x64-v0.12.3.0.tar.bz2 -C ~
-user@host:~$ sudo install -g staff -m 0755 -o root ~/monero-v0.12.3.0/monero-blockchain-* ~/monero-v0.12.3.0/monerod -t /usr/local/bin/
+user@host:~$ tar xf monero-linux-x64-<current version>.tar.bz2 -C ~
+user@host:~$ sudo install -g staff -m 0755 -o root ~/monero-<current version>/monero-blockchain-* ~/monero-<current version>/monerod -t /usr/local/bin/
 ```
 + Copy wallet binaries to their AppVM. Enter `monero-wallet-ws` in the `dom0` prompt.
 
 ```
-user@host:~$ qvm-copy ~/monero-v0.12.3.0/monero-gen-trusted-multisig ~/monero-v0.12.3.0/monero-wallet-*
+user@host:~$ qvm-copy ~/monero-<current version>/monero-gen-trusted-multisig ~/monero-<current version>/monero-wallet-*
 ```
 ### 3.1.2. Install GUI tools
 + Use Monero's [guide](https://getmonero.org/resources/user-guides/verification-allos-advanced.html) to download and verify the current software for the GUI.
@@ -179,13 +181,13 @@ user@host:~$ qvm-copy ~/monero-v0.12.3.0/monero-gen-trusted-multisig ~/monero-v0
 + Extract the software and install the daemon binaries.
 
 ```
-user@host:~$ tar xf monero-gui-linux-x64-v0.12.3.0.tar.bz2 -C ~
-user@host:~$ sudo install -g staff -m 0755 -o root ~/monero-gui-v0.12.3.0/monero-blockchain-* ~/monero-gui-v0.12.3.0/monerod -t /usr/local/bin/
+user@host:~$ tar xf monero-gui-linux-x64-<current version>.tar.bz2 -C ~
+user@host:~$ sudo install -g staff -m 0755 -o root ~/monero-gui-<current version>/monero-blockchain-* ~/monero-gui-<current version>/monerod -t /usr/local/bin/
 ```
 + Copy wallet binaries to their AppVM. Enter `monero-wallet-ws` in the `dom0` prompt.
 
 ```
-user@host:~$ qvm-copy ~/monero-gui-v0.12.3.0/monero-gen-trusted-multisig ~/monero-gui-v0.12.3.0/monero-wallet-*
+user@host:~$ qvm-copy ~/monero-gui-<current version>/monero-gen-trusted-multisig ~/monero-gui-<current version>/monero-wallet-*
 ```
 ### 3.2. Create `qrexec` action files
 ```
@@ -302,7 +304,7 @@ user@host:~$ monero-wallet-gui
   + [https://www.whonix.org/wiki/Qubes/AppArmor](https://www.whonix.org/wiki/Qubes/AppArmor)
 
 + Make use of my experimental Monero profiles:
-  + [https://github.com/0xB44EFD8751077F97/apparmor-monero-qubes-whonix](https://github.com/0xB44EFD8751077F97/apparmor-monero-qubes-whonix)
+  + [AppArmor Profiles](https://github.com/0xB44EFD8751077F97/apparmor-profiles/tree/master/apparmor-monero-qubes-whonix)
 
 ### 8.2. VM hardening
   + [https://github.com/tasket/Qubes-VM-hardening](https://github.com/tasket/Qubes-VM-hardening)

@@ -17,13 +17,13 @@ This is an extension of the Monero user guide "Wallet/Daemon Isolation with Qube
 3. **[Set Up the Daemon's AppVM](#3-set-up-the-daemons-appvm)**
 + 3.1. [Create `qrexec` action files](#31-create-qrexec-action-files)
 + 3.2. [Shutdown `monerod-ws`](#32-shutdown-monerod-ws)
-4. **[Set Up the Wallet's AppVM](set-up-the-wallets-appvm)**
-+ 4.1. [Create communication channel with daemon on boot](#41-Create-communication-channel-with-daemon-on-boot)
+4. **[Set Up the Wallet's AppVM](#4set-up-the-wallets-appvm)**
++ 4.1. [Create communication channel with daemon on boot](#41-create-communication-channel-with-daemon-on-boot)
 + 4.2. [Shutdown `monero-wallet-ws`](#42-shutdown-monero-wallet-ws)
 
 ## 1. Set Up `Dom0`
 ### 1.1. Create `qrexec` policies
-**Complete the following command in a `dom0` terminal.**
+**Complete the following commands in a `dom0` terminal.**
 ```
 [user@dom0 ~]$ sudo tee </etc/qubes-rpc/policy/whonix.monerod-mainnet /etc/qubes-rpc/policy/whonix.monerod-{stagenet,testnet} >/dev/null
 ```
