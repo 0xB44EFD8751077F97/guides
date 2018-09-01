@@ -1,7 +1,7 @@
 <!---
 ## Copyright (C) 2018 0xB44EFD8751077F97 <0xB44EFD8751077F97@firemail.cc>
 ## Email PGP key: 0x4575F28C5441951C8A0056B8CE1A00A773F733E1
-## https://github.com/0xB44EFD8751077F97/
+## https://github.com/0xB44EFD8751077F97/guides/
 ## See the file COPYING for copying conditions.
 -->
 # Enable Stagenet and Testnet Ports
@@ -9,17 +9,15 @@ This is an extension of the Monero user guide "Wallet/Daemon Isolation with Qube
 ## Table of Contents
 1. **[Set Up `Dom0`](#1-set-up-dom0)**
 + 1.1. [Create `qrexec` policies](#11-create-qrexec-policies)
-+ 1.2. [Enable via `qvm-service`](#12-enable-via-qvm-service)
++ 1.2. [Enable `qvm-service`](#12-enable-qvm-service)
 2. **[Set Up the TemplateVM](#2-set-up-the-templatevm)**
 + 2.1. [Create stagenet `systemd` unit](#21-create-stagenet-systemd-unit)
 + 2.2. [Create testnet `systemd` unit](#22-create-testnet-systemd-unit)
 + 2.3. [Enable the units that should start on boot](#23-enable-the-units-that-should-start-on-boot)
 3. **[Set Up the Daemon's AppVM](#3-set-up-the-daemons-appvm)**
 + 3.1. [Create `qrexec` action files](#31-create-qrexec-action-files)
-+ 3.2. [Shutdown `monerod-ws`](#32-shutdown-monerod-ws)
 4. **[Set Up the Wallet's AppVM](#4set-up-the-wallets-appvm)**
 + 4.1. [Create communication channel with daemon on boot](#41-create-communication-channel-with-daemon-on-boot)
-+ 4.2. [Shutdown `monero-wallet-ws`](#42-shutdown-monero-wallet-ws)
 
 ## 1. Set Up `Dom0`
 ### 1.1. Create `qrexec` policies
@@ -27,7 +25,7 @@ This is an extension of the Monero user guide "Wallet/Daemon Isolation with Qube
 ```
 [user@dom0 ~]$ sudo tee </etc/qubes-rpc/policy/whonix.monerod-mainnet /etc/qubes-rpc/policy/whonix.monerod-{stagenet,testnet} >/dev/null
 ```
-### 1.2. Enable via `qvm-service`
+### 1.2. Enable `qvm-service`
 ```
 [user@dom0 ~]$ qvm-service --enable monerod-ws monerod-stagenet
 [user@dom0 ~]$ qvm-service --enable monerod-ws monerod-testnet
@@ -38,7 +36,7 @@ This is an extension of the Monero user guide "Wallet/Daemon Isolation with Qube
 ```
 user@host:~$ sudo kwrite /lib/systemd/system/monerod-stagenet.service
 ```
-+ Paste the following:
++ Enter the following text and save the file.
 
 ```
 [Unit]
@@ -73,19 +71,25 @@ user@host:~$ sudo chmod 0644 /lib/systemd/system/monerod-*.service
 user@host:~$ sudo systemctl enable monerod-stagenet.service
 user@host:~$ sudo systemctl enable monerod-testnet.service
 ```
++ Shutdown `whonix-ws-14-monero`.
+
+```
+user@host:~$ sudo shutdown now
+```
 ## 3. Set Up the Daemon's AppVM
 ### **Complete the following commands in a `monerod-ws` terminal.**
 ### 3.1. Create `qrexec` action files
 ```
-user@host:~$ echo 'socat STDIO TCP:localhost:28081' | sudo tee /rw/usrlocal/etc/qubes-rpc/whonix.monerod-testnet >/dev/null
-user@host:~$ echo 'socat STDIO TCP:localhost:38081' | sudo tee /rw/usrlocal/etc/qubes-rpc/whonix.monerod-stagenet >/dev/null
+user@host:~$ su -c "echo 'socat STDIO TCP:localhost:28081' > /rw/usrlocal/etc/qubes-rpc/whonix.monerod-testnet"
+user@host:~$ su -c "echo 'socat STDIO TCP:localhost:38081' > /rw/usrlocal/etc/qubes-rpc/whonix.monerod-stagenet"
 ```
 + Fix permissions.
 
 ```
 user@host:~$ sudo chmod 0644 /rw/usrlocal/etc/qubes-rpc/whonix.monerod-*
 ```
-### 3.2. Shutdown `monerod-ws`
++ Shutdown `monerod-ws`.
+
 ```
 user@host:~$ sudo shutdown now
 ```
@@ -97,13 +101,14 @@ user@host:~$ sudo shutdown now
 ```
 user@host:~$ sudo kwrite /rw/config/rc.local
 ```
-+ Paste the following on a new line at the bottom of the file:
++ Enter the following below any existing text, and save the file.
 
 ```
 socat TCP-LISTEN:28081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws whonix.monerod-testnet" &
 socat TCP-LISTEN:38081,fork,bind=127.0.0.1 EXEC:"qrexec-client-vm monerod-ws whonix.monerod-stagenet" &
 ```
-### 4.2. Shutdown `monero-wallet-ws`
++ Shutdown `monero-wallet-ws`.
+
 ```
 user@host:~$ sudo shutdown now
 ```
