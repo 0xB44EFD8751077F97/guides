@@ -80,8 +80,8 @@ user@host:~$ sudo shutdown now
 ### **Complete the following commands in a `monerod-ws` terminal.**
 ### 3.1. Create `qrexec` action files
 ```
-user@host:~$ su -c "echo 'socat STDIO TCP:localhost:28081' > /rw/usrlocal/etc/qubes-rpc/whonix.monerod-testnet"
-user@host:~$ su -c "echo 'socat STDIO TCP:localhost:38081' > /rw/usrlocal/etc/qubes-rpc/whonix.monerod-stagenet"
+user@host:~$ sudo su -c "echo 'socat STDIO TCP:localhost:28081' > /rw/usrlocal/etc/qubes-rpc/whonix.monerod-testnet"
+user@host:~$ sudo su -c "echo 'socat STDIO TCP:localhost:38081' > /rw/usrlocal/etc/qubes-rpc/whonix.monerod-stagenet"
 ```
 + Fix permissions.
 
